@@ -1,0 +1,89 @@
+# Importa as bibliotecas necessárias
+import nltk  # Pacote para tarefas relacionadas a PLN
+from sklearn.model_selection import train_test_split  # Divisão de dados entre treino e teste
+from sklearn.feature_extraction.text import CountVectorizer  # Para transformar texto em vetores
+from sklearn.naive_bayes import MultinomialNB  # Modelo de classificação
+from sklearn.metrics import accuracy_score  # Para avaliar a precisão do modelo
+
+# Baixa recursos do NLTK (se necessário)
+nltk.download("stopwords")
+from nltk.corpus import stopwords
+import string
+
+# 1. Base de Dados de Exemplo
+# Listas simples para treinar o modelo com frases positivas e negativas
+dados_textos = [
+    "Eu amei o filme, foi incrível!",
+    "O produto é horrível, nunca mais comprarei.",
+    "Estou muito feliz com o atendimento!",
+    "A comida estava péssima e fria.",
+    "Adorei a experiência, recomendo a todos.",
+    "O serviço foi terrível, odiei e me senti maltratado.",
+    "Eu me senti tão bem com a apresentação, parabéns!",
+    "Não tive uma boa experiência, foi decepcionante.",
+]
+dados_classes = [
+    "positivo",  # Sentimento da primeira frase
+    "negativo",  # Sentimento da segunda frase, e assim por diante...
+    "positivo",
+    "negativo",
+    "positivo",
+    "negativo",
+    "positivo",
+    "negativo",
+]
+
+# 2. Pré-processamento de Texto
+# Função auxiliar para limpar os textos
+def processar_texto(texto):
+    # Remove pontuações
+    texto = texto.translate(str.maketrans("", "", string.punctuation))
+    
+    # Transformar tudo em minúsculas
+    texto = texto.lower()
+    
+    # Remove palavras comuns (stopwords) que não adicionam significado
+    palavras = texto.split()
+    palavras = [palavra for palavra in palavras if palavra not in stopwords.words("portuguese")]
+    
+    # Junta as palavras importantes novamente em uma string
+    return " ".join(palavras)
+
+# Aplica a função nos textos
+dados_textos_processados = [processar_texto(texto) for texto in dados_textos]
+
+# 3. Vetorização
+# Converte o texto em uma matriz de contagem de palavras (bag of words)
+vetorizador = CountVectorizer()
+X = vetorizador.fit_transform(dados_textos_processados)
+
+# 4. Divisão em Conjuntos de Treinamento e Teste
+# Dividimos os dados em treino (80%) e teste (20%)
+X_treino, X_teste, y_treino, y_teste = train_test_split(X, dados_classes, test_size=0.2, random_state=42)
+
+# 5. Criação do Modelo
+# Usamos o algoritmo **Naive Bayes Multinomial** (modelo clássico para PLN)
+modelo = MultinomialNB()
+
+# Treina o modelo com os dados de treino
+modelo.fit(X_treino, y_treino)
+
+# 6. Teste e Avaliação do Modelo
+# Faz previsões com os dados de teste
+y_pred = modelo.predict(X_teste)
+
+# Calcula a precisão das previsões
+precisao = accuracy_score(y_teste, y_pred)
+
+# 7. Exibe os Resultados
+print(f"A precisão do modelo é: {precisao * 100:.2f}%")
+
+# 8. Fazendo uma nova previsão
+# Adiciona um exemplo novo para análise
+novo_texto = "Eu achei o produto bem útil e adorei!"
+novo_texto_processado = processar_texto(novo_texto)  # Pré-processa o texto novo
+novo_vetor = vetorizador.transform([novo_texto_processado])  # Vetoriza o texto novo
+
+# Faz a previsão de sentimento
+sentimento = modelo.predict(novo_vetor)
+print(f"O sentimento da frase '{novo_texto}' é: {sentimento[0]}")
